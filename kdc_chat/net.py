@@ -86,3 +86,10 @@ def listen(host: str, port: int) -> socket.socket:
 def accept(server: socket.socket, me: str) -> tuple[Channel, tuple[str, int]]:
     sock, addr = server.accept()
     return Channel(sock, me), addr
+
+# Parse "host:port" from the command line into (host, port)
+def parse_addr(text: str) -> tuple[str, int]:
+    host, sep, port = text.rpartition(":")
+    if not sep or not host or not port.isdigit() or not 0 < int(port) < 65536:
+        raise ValueError(f"alamat harus berformat host:port, diterima '{text}'")
+    return host, int(port)
