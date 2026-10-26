@@ -1,8 +1,7 @@
 import secrets
 import string
 
-# TODO integrasi: ganti ke `from kdc_chat import cipher`
-from kdc_chat import cipher_stub as cipher  
+from kdc_chat import cipher
 from kdc_chat import net
 from kdc_chat.net import Channel
 
@@ -133,7 +132,7 @@ def _fail(ch: Channel, to: str, e: HandshakeError) -> None:
         except OSError:
             pass
 
-# Alice side: steps 1-2 with the KDC, then steps 3-5 with Bob
+# Initiator side (Alice in the slides): steps 1-2 with the KDC, then steps 3-5 with the responder
 # Returns Ks. Raises HandshakeError on failure; closing bob_ch is up to the caller
 def alice_handshake(kdc_addr: tuple[str, int], bob_ch: Channel,
                     me: str, peer: str, ka: str) -> str:
@@ -157,7 +156,7 @@ def alice_handshake(kdc_addr: tuple[str, int], bob_ch: Channel,
         if len(parts) != 2:
             raise HandshakeError("format langkah 2 harus E(Ka,...)|E(Kb,...)")
         part1, ticket = parts
-        fields = _decrypt(part1, ka, "E(Ka,...) dengan master key Alice").split(DELIM)
+        fields = _decrypt(part1, ka, f"E(Ka,...) dengan master key {me}").split(DELIM)
         if len(fields) != 4:
             raise HandshakeError("isi E(Ka,...) harus Ks|IDa|IDb|N1")
         ks, id_a, id_b, n1_reply = fields
@@ -206,7 +205,7 @@ def bob_handshake(alice_ch: Channel, me: str, kb: str,
                 raise HandshakeError(f"diharapkan TICKET, diterima {msg['type']}")
         peer = msg["from"]
 
-        fields = _decrypt(msg["payload"], kb, "tiket E(Kb,...) dengan master key Bob").split(DELIM)
+        fields = _decrypt(msg["payload"], kb, f"tiket E(Kb,...) dengan master key {me}").split(DELIM)
         if len(fields) != 2:
             raise HandshakeError("isi tiket harus Ks|IDa")
         ks, id_a = fields

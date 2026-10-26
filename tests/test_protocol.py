@@ -3,8 +3,7 @@ import io
 import threading
 import unittest
 
-# TODO integrasi: ganti ke `from kdc_chat import cipher`
-from kdc_chat import cipher_stub as cipher  
+from kdc_chat import cipher
 from kdc_chat import net, protocol
 from kdc_chat.protocol import HandshakeError
 
@@ -80,7 +79,7 @@ class HandshakeTest(unittest.TestCase):
     def test_wrong_alice_key_fails_at_step_2(self):
         kdc_port, _, _ = real_kdc({"alice": KA, "bob": KB})
         bob_port, bob_result, bob_thread = bob(KB)
-        with self.assertRaisesRegex(HandshakeError, "master key Alice"):
+        with self.assertRaisesRegex(HandshakeError, "master key alice"):
             self.run_alice(kdc_port, bob_port, bob_result, bob_thread, ka="kunciAliceSALAH1")
         # Bob never received a ticket; he only sees the connection closing
         self.assertIsInstance(bob_result["error"], HandshakeError)

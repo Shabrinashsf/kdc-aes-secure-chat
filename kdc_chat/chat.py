@@ -18,12 +18,16 @@ class ChatSession:
         me: str,
         peer: str,
         on_command: Callable[[str], str | None] | None = None,
+        initiator: bool | None = None,
     ):
         self.channel = channel
         self.session_key = session_key
         self.me = me
         self.peer = peer
         self.on_command = on_command
+        # Initiator = the side that asked the KDC for the session key and may /rekey.
+        # Defaults to the old rule (alice) when the caller does not say.
+        self.initiator = (me == "alice") if initiator is None else initiator
 
         self._show_hex = False
         self._events: queue.Queue[str] = queue.Queue()
@@ -95,8 +99,8 @@ class ChatSession:
 
                     self._say(f"[{self.peer}] {plaintext}")
 
-                # Bob menerima permintaan rekey dari Alice
-                elif msg_type == "REKEY" and self.me == "bob":
+                # Responder menerima permintaan rekey dari initiator
+                elif msg_type == "REKEY" and not self.initiator:
                     self.channel.send(
                         "REKEY_ACK",
                         self.peer
@@ -191,7 +195,7 @@ class ChatSession:
             "  /help  - Menampilkan bantuan\n"
             "  /hex   - Menampilkan/sembunyikan Hex\n"
             "  /quit  - Mengakhiri chat\n"
-            "  /rekey - Meminta session key baru (Alice)\n"
+            "  /rekey - Meminta session key baru (initiator)\n"
             "Perintah lain diteruskan ke menu peer."
         )
 
@@ -280,11 +284,11 @@ class ChatSession:
 
                     result = self.on_command(line)
 
-                    # Rekey hanya boleh dimulai Alice
+                    # Rekey hanya boleh dimulai initiator
                     if result == "rekey":
-                        if self.me != "alice":
+                        if not self.initiator:
                             self._say(
-                                "[WARNING] Hanya Alice yang "
+                                "[WARNING] Hanya initiator yang "
                                 "dapat meminta rekey."
                             )
                             continue
